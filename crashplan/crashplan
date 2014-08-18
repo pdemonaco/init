@@ -1,0 +1,84 @@
+#!/sbin/runscript
+# Simple transcription of crashplan init script
+
+extra_commands="checkconfig"
+description="Starts the Code42 CrashPlan Daemon"
+description_checkconfig="Verifies environment exists"
+
+CRASHPLAN_DIR="/opt/crashplan"
+CRASHPLAN_IVARS="${CRASHPLAN_DIR}/install.vars"
+CRASHPLAN_PIDFILE="/var/run/${SVCNAME}.pid"
+CRASHPLAN_RCONF="${CRASHPLAN_DIR}/bin/run.conf"
+CRASHPLAN_DAEMON="${CRASHPLAN_DIR}/lib/com.backup42.desktop.jar"
+CRASHPLAN_SERVICE="com.backup42.service.CPService"
+CRASHPLAN_FULL_CP="${CRASHPLAN_DAEMON}:${CRASHPLAN_DIR}/lang"       # Probably the java class path
+
+
+checkconfig() {
+    CRASHPLAN_RC=0
+
+    # The installation directory for crashplan
+    if [ ! -d $CRASHPLAN_DIR ] ; then
+        eerror "CrashPlan does not exist at ${CRASHPLAN_DIR}"
+        CRASHPLAN_RC=1
+    fi
+
+    # We need the daemon file
+    if [ ! -e $CRASHPLAN_DAEMON ]; then
+        eerror "${CRASHPLAN_DAEMON} is missing!"
+    fi
+
+    # Parameters needed for the run
+    if [ -e $CRASHPLAN_RCONF ]; then
+        . $CRASHPLAN_RCONF
+    else
+        eerror "${CRASHPLAN_RCONF} is missing!"
+        CRASHPLAN_RC=1
+    fi
+
+    # Check to make sure install variable exists
+    if [ -e "${CRASHPLAN_IVARS}" ]; then
+        . $CRASHPLAN_IVARS
+    else
+        eerror "${CRASHPLAN_IVARS} is missing!"
+        CRASHPLAN_RC=1
+    fi
+
+    # We need a LANG variable to end up as <thing>.UTF-8
+    if [ ${LANG} ]; then
+        LOCALE=$(sed 's/\..*//g' <<< ${LANG})
+        export LANG="${LOCALE}.UTF-8"
+    else
+        export LANG="en_US.UTF-8"
+    fi
+
+    return $CRASHPLAN_RC
+}
+
+depend() {
+	need net
+}
+
+start() {
+	ebegin "Starting ${SVCNAME}"
+   
+    checkconfig || retun 1
+    
+    start-stop-daemon --pidfile "${CRASHPLAN_PIDFILE}" \
+        --make-pidfile --chdir "${CRASHPLAN_DIR}" \
+        --stdout $CRASHPLAN_DIR/log/engine_output.log \
+        --stderr $CRASHPLAN_DIR/log/engine_error.log \
+        --nice 19 --start --background --progress \
+        --exec $JAVACOMMON -- ${SRV_JAVA_OPTS} -classpath ${CRASHPLAN_FULL_CP} ${CRASHPLAN_SERVICE}
+
+    eend $?
+}
+
+stop() {
+	ebegin "Stopping ${SVCNAME}"
+
+    start-stop-daemon --pidfile "${CRASHPLAN_PIDFILE}" \
+        --progress --stop $JAVACOMMON --retry SIGTERM/15 SIGKILL/5
+
+	eend $?
+}
