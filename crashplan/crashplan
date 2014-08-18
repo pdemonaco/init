@@ -1,5 +1,7 @@
 #!/sbin/runscript
-# Simple transcription of crashplan init script
+# Simple transcription of the crashplan systemd init script
+# Note that this script can be found in /opt/crashplan/bin/CrashPlanEngine
+# in typical installs
 
 extra_commands="checkconfig"
 description="Starts the Code42 CrashPlan Daemon"
