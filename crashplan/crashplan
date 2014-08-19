@@ -7,15 +7,16 @@ extra_commands="checkconfig"
 description="Starts the Code42 CrashPlan Daemon"
 description_checkconfig="Verifies environment exists"
 
-CRASHPLAN_DIR="/opt/crashplan"
-CRASHPLAN_IVARS="${CRASHPLAN_DIR}/install.vars"
-CRASHPLAN_PIDFILE="/var/run/${SVCNAME}.pid"
-CRASHPLAN_RCONF="${CRASHPLAN_DIR}/bin/run.conf"
-CRASHPLAN_DAEMON="${CRASHPLAN_DIR}/lib/com.backup42.desktop.jar"
-CRASHPLAN_SERVICE="com.backup42.service.CPService"
+CRASHPLAN_DIR="/opt/crashplan"                                      # Typical installation directory
+CRASHPLAN_IVARS="${CRASHPLAN_DIR}/install.vars"                     # Variables recorded by installation
+CRASHPLAN_PIDFILE="/var/run/${SVCNAME}.pid"                         # Target location for current PID
+CRASHPLAN_RCONF="${CRASHPLAN_DIR}/bin/run.conf"                     # Should be a config file
+CRASHPLAN_DAEMON="${CRASHPLAN_DIR}/lib/com.backup42.desktop.jar"    # Jar containing relevant classes
+CRASHPLAN_SERVICE="com.backup42.service.CPService"                  # Name of the service class
 CRASHPLAN_FULL_CP="${CRASHPLAN_DAEMON}:${CRASHPLAN_DIR}/lang"       # Probably the java class path
 
-
+# This function performs basic configuration checks
+# If anything is missing or broken we can't start the process
 checkconfig() {
     CRASHPLAN_RC=0
 
@@ -38,7 +39,7 @@ checkconfig() {
         CRASHPLAN_RC=1
     fi
 
-    # Check to make sure install variable exists
+    # Check to make sure install variable file exists
     if [ -e "${CRASHPLAN_IVARS}" ]; then
         . $CRASHPLAN_IVARS
     else
@@ -47,16 +48,20 @@ checkconfig() {
     fi
 
     # We need a LANG variable to end up as <thing>.UTF-8
+    # worst case we'll fall back to en_US.UTF-8
     if [ ${LANG} ]; then
         LOCALE=$(sed 's/\..*//g' <<< ${LANG})
         export LANG="${LOCALE}.UTF-8"
     else
         export LANG="en_US.UTF-8"
+        ewarn "A valid local could not be extracted from \$LANG"
+        ewarn "Defaulting in ${LANG}"
     fi
 
     return $CRASHPLAN_RC
 }
 
+# Right now we need net to operate
 depend() {
 	need net
 }
