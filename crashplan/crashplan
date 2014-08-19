@@ -61,15 +61,18 @@ checkconfig() {
     return $CRASHPLAN_RC
 }
 
-# Right now we need net to operate
+# We need net to operate
+# but it may be more sensible to list
+# this as a start-after
 depend() {
 	need net
 }
 
+# Actual startup routine - depends on checkconfig
 start() {
 	ebegin "Starting ${SVCNAME}"
    
-    checkconfig || retun 1
+    checkconfig || eend 1
     
     start-stop-daemon --pidfile "${CRASHPLAN_PIDFILE}" \
         --make-pidfile --chdir "${CRASHPLAN_DIR}" \
@@ -81,6 +84,7 @@ start() {
     eend $?
 }
 
+# Stop routine should attempt to kill via TERM, then KILL
 stop() {
 	ebegin "Stopping ${SVCNAME}"
 
