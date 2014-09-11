@@ -65,7 +65,8 @@ checkconfig() {
 # but it may be more sensible to list
 # this as a start-after
 depend() {
-	need net
+	need localmount
+    use net
 }
 
 # Actual startup routine - depends on checkconfig
