@@ -11,3 +11,8 @@ Once CrashPlan has been installed simply copy this script into /etc/init.d/
 ```
 cp init/crashplan/crashplan /etc/init.d/
 ```
+Then add crashplan to the desired runlevel
+
+```
+rc-update add crashplan default
+```
